@@ -546,13 +546,14 @@ def render_polling_mode() -> None:
 
         st.dataframe(governor_input_rows, use_container_width=True)
 
-def build_governor_region_tuning(region_name: str) -> dict:
+def build_governor_region_tuning(region_name: str, prefill_values: dict | None = None) -> dict:
+    prefill_values = prefill_values or {}
     with st.expander(f"⚙️ Настройки за {region_name}", expanded=False):
         regional_affinity_weight = st.slider(
             "Тежест на регионалната близост",
             min_value=0.00,
             max_value=0.60,
-            value=0.30,
+            value=float(prefill_values.get("regional_affinity_weight", 0.30)),
             step=0.01,
             key=f"{region_name}_regional_affinity_weight",
         )
@@ -561,7 +562,7 @@ def build_governor_region_tuning(region_name: str) -> dict:
             "Тежест на икономическия профил",
             min_value=0.00,
             max_value=0.40,
-            value=0.15,
+            value=float(prefill_values.get("economy_weight", 0.15)),
             step=0.01,
             key=f"{region_name}_economy_weight",
         )
@@ -570,7 +571,7 @@ def build_governor_region_tuning(region_name: str) -> dict:
             "Тежест на сигурността",
             min_value=0.00,
             max_value=0.40,
-            value=0.15,
+            value=float(prefill_values.get("security_weight", 0.15)),
             step=0.01,
             key=f"{region_name}_security_weight",
         )
@@ -579,7 +580,7 @@ def build_governor_region_tuning(region_name: str) -> dict:
             "Тежест на доверието / антистатукво нагласата",
             min_value=0.00,
             max_value=0.40,
-            value=0.15,
+            value=float(prefill_values.get("trust_weight", 0.15)),
             step=0.01,
             key=f"{region_name}_trust_weight",
         )
@@ -588,7 +589,7 @@ def build_governor_region_tuning(region_name: str) -> dict:
             "Тежест на идентичността / локалната култура",
             min_value=0.00,
             max_value=0.30,
-            value=0.10,
+            value=float(prefill_values.get("identity_weight", 0.10)),
             step=0.01,
             key=f"{region_name}_identity_weight",
         )
@@ -597,7 +598,7 @@ def build_governor_region_tuning(region_name: str) -> dict:
             "Тежест на малцинствения фактор",
             min_value=0.00,
             max_value=0.20,
-            value=0.05,
+            value=float(prefill_values.get("minority_weight", 0.05)),
             step=0.01,
             key=f"{region_name}_minority_weight",
         )
@@ -606,7 +607,7 @@ def build_governor_region_tuning(region_name: str) -> dict:
             "Тежест на машинния / клиентелисткия вот",
             min_value=0.00,
             max_value=0.30,
-            value=0.10,
+            value=float(prefill_values.get("machine_weight", 0.10)),
             step=0.01,
             key=f"{region_name}_machine_weight",
         )
@@ -615,7 +616,7 @@ def build_governor_region_tuning(region_name: str) -> dict:
             "Случайност при качествата на кандидатите",
             min_value=0.00,
             max_value=0.30,
-            value=0.12,
+            value=float(prefill_values.get("candidate_randomness", 0.12)),
             step=0.01,
             key=f"{region_name}_candidate_randomness",
         )
@@ -624,7 +625,7 @@ def build_governor_region_tuning(region_name: str) -> dict:
             "Общ бонус за харизма",
             min_value=-0.20,
             max_value=0.20,
-            value=0.00,
+            value=float(prefill_values.get("charisma_bonus", 0.00)),
             step=0.01,
             key=f"{region_name}_charisma_bonus",
         )
@@ -633,7 +634,7 @@ def build_governor_region_tuning(region_name: str) -> dict:
             "Общ бонус за компетентност",
             min_value=-0.20,
             max_value=0.20,
-            value=0.00,
+            value=float(prefill_values.get("competence_bonus", 0.00)),
             step=0.01,
             key=f"{region_name}_competence_bonus",
         )
@@ -642,7 +643,7 @@ def build_governor_region_tuning(region_name: str) -> dict:
             "Допълнителен бонус за системни партии с мрежи",
             min_value=-0.20,
             max_value=0.20,
-            value=0.00,
+            value=float(prefill_values.get("machine_bonus", 0.00)),
             step=0.01,
             key=f"{region_name}_machine_bonus",
         )
@@ -651,7 +652,7 @@ def build_governor_region_tuning(region_name: str) -> dict:
             "Бонус за антисистемни партии",
             min_value=-0.20,
             max_value=0.20,
-            value=0.00,
+            value=float(prefill_values.get("anti_system_bonus", 0.00)),
             step=0.01,
             key=f"{region_name}_anti_system_bonus",
         )
@@ -660,7 +661,7 @@ def build_governor_region_tuning(region_name: str) -> dict:
             "Бонус за партии на статуквото / полу-статуквото",
             min_value=-0.20,
             max_value=0.20,
-            value=0.00,
+            value=float(prefill_values.get("incumbent_bonus", 0.00)),
             step=0.01,
             key=f"{region_name}_incumbent_bonus",
         )
@@ -739,6 +740,9 @@ def render_governor_mode() -> None:
 
     voters = st.session_state.governor_voters
 
+    if "governor_region_prefills" not in st.session_state:
+        st.session_state.governor_region_prefills = {}
+
     st.write("### Настройка по региони")
     st.caption("За всеки регион можете да зададете различни тежести и бонуси, които да влияят върху губернаторските избори.")
     st.info(
@@ -747,11 +751,35 @@ def render_governor_mode() -> None:
         "Колкото по-висока е дадена тежест, толкова по-силно този фактор влияе върху крайния избор на избирателя."
     )
 
+    if st.button("📥 Зареди стойностите от социологическите проучвания"):
+        polling_inputs = st.session_state.get("governor_inputs_from_polling", {})
+        if polling_inputs:
+            imported_prefills = {}
+            for region_name in REGION_PROFILES.keys():
+                polling_values = polling_inputs.get(region_name, {})
+                imported_prefills[region_name] = {
+                    "identity_weight": polling_values.get("identity_weight", 0.10),
+                    "machine_weight": polling_values.get("machine_weight", 0.10),
+                    "charisma_bonus": polling_values.get("charisma_bonus", 0.00),
+                    "competence_bonus": polling_values.get("competence_bonus", 0.00),
+                    "anti_system_bonus": polling_values.get("anti_system_bonus", 0.00),
+                    "incumbent_bonus": polling_values.get("incumbent_bonus", 0.00),
+                }
+            st.session_state.governor_region_prefills = imported_prefills
+            st.success("Стойностите от социологическите проучвания са заредени в губернаторските настройки.")
+            st.rerun()
+        else:
+            st.warning("Няма налични регионални стойности от социологическия модул. Първо генерирайте резултати в „Социологически проучвания“.")
+
     current_tuning_signature = []
 
     region_tuning_map = {}
+    region_prefills = st.session_state.get("governor_region_prefills", {})
     for region_name in REGION_PROFILES.keys():
-        region_tuning_map[region_name] = build_governor_region_tuning(region_name)
+        region_tuning_map[region_name] = build_governor_region_tuning(
+            region_name,
+            prefill_values=region_prefills.get(region_name, {}),
+        )
         region_signature = tuple(sorted(region_tuning_map[region_name].items()))
         current_tuning_signature.append((region_name, region_signature))
 
