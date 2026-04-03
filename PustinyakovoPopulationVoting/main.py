@@ -493,6 +493,7 @@ def render_polling_mode() -> None:
             security_shock=security_shock,
             trust_shock=trust_shock,
         )
+        st.session_state.governor_inputs_from_polling = results.get("governor_inputs", {})
 
         st.write("### Национални индикатори")
         national_rows = [
@@ -523,6 +524,27 @@ def render_polling_mode() -> None:
             for region, values in results["regions"].items()
         ]
         st.dataframe(region_rows, use_container_width=True)
+
+        st.write("### Регионални стойности за губернаторски избори")
+        st.caption("Тези стойности се генерират от социологическия модел и могат по-късно да бъдат използвани като основа за настройките в губернаторските избори.")
+
+        governor_input_rows = []
+        for region, values in results.get("governor_inputs", {}).items():
+            governor_input_rows.append({
+                "Регион": region,
+                "corruption_shock": values.get("corruption_shock", 0.0),
+                "economic_shock": values.get("economic_shock", 0.0),
+                "trust_shock": values.get("trust_shock", 0.0),
+                "security_shock": values.get("security_shock", 0.0),
+                "identity_weight": values.get("identity_weight", 0.0),
+                "machine_weight": values.get("machine_weight", 0.0),
+                "charisma_bonus": values.get("charisma_bonus", 0.0),
+                "competence_bonus": values.get("competence_bonus", 0.0),
+                "anti_system_bonus": values.get("anti_system_bonus", 0.0),
+                "incumbent_bonus": values.get("incumbent_bonus", 0.0),
+            })
+
+        st.dataframe(governor_input_rows, use_container_width=True)
 
 def build_governor_region_tuning(region_name: str) -> dict:
     with st.expander(f"⚙️ Настройки за {region_name}", expanded=False):
